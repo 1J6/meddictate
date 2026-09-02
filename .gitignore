@@ -1,0 +1,16 @@
+# Downloaded models and binaries (see README for the download commands)
+models/
+llama/
+sherpa-onnx-medasr-ctc-en-int8-*/
+silero_vad.onnx
+*.tar.bz2
+
+# Large third-party word lists (downloaded; custom_words.txt is kept)
+wordlists/english_words.txt
+wordlists/medical_terms.txt
+wordlists/medical_terms_LICENSE.txt
+
+# Local state
+widget_state.json
+__pycache__/
+*.pyc
