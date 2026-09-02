@@ -50,8 +50,11 @@ PRE_PAD_SECONDS = 0.50     # audio kept before a detected phrase (the VAD reacts
 POST_PAD_SECONDS = 0.20    # audio kept after a detected phrase
 
 # Where text lands
-PASTE_AT_END = True        # press Ctrl+End before pasting so text appends at the
-                           # end of the box even if you moved the cursor to fix a typo
+PASTE_AT_END = False       # False: insert wherever the cursor is (a trailing space is
+                           # added so text inserted before existing text isn't glued on).
+                           # True: press Ctrl+End first so text always appends at the
+                           # end of the box even if you moved the cursor to fix a typo.
+                           # The widget has a Cursor/End toggle for this.
 RETURN_TO_PREVIOUS_WINDOW = True   # after pasting, switch back to whatever window
                                    # you were looking at (e.g. UpToDate)
 
@@ -566,6 +569,11 @@ class PhraseWriter:
                     text = text[1:].lstrip(" ")
                 if not text:
                     continue
+                if text[0] in ".,:;?!)" and not pending and self.doc.endswith(" "):
+                    # punctuation arriving on its own after our trailing space
+                    # (cursor mode): pull the space back so we get "word." not "word ."
+                    self._edit_doc("backspace", 1, quiet=True)
+                    before = self.doc
                 if (before and not before.endswith(("\n", " "))
                         and not text.startswith("\n") and text[0] not in ".,:;?!)"):
                     text = " " + text
@@ -583,14 +591,17 @@ class PhraseWriter:
                 if changes:
                     print("\n    fixed: " + ", ".join(f"{a} -> {b}" for a, b in changes) + "\n",
                           end="", flush=True)
+            if not PASTE_AT_END and not pending.endswith(("\n", " ")):
+                pending += " "      # cursor mode: don't glue onto whatever follows
             print(pending, end="", flush=True)
             if self.do_paste:
                 paste_text(pending, self.target, PASTE_AT_END)
             self.doc += pending
 
-    def _edit_doc(self, kind: str, count: int):
+    def _edit_doc(self, kind: str, count: int, quiet: bool = False):
         if kind == "backspace":
-            print(f"[⌫x{count}]", end="", flush=True)
+            if not quiet:
+                print(f"[⌫x{count}]", end="", flush=True)
             self.doc = self.doc[:-count]
             if self.do_paste:
                 press_backspace(count, self.target, PASTE_AT_END)

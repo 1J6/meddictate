@@ -155,6 +155,16 @@ class Widget:
             b.pack(side="left")
             b.bind("<Button-1>", lambda e, v=live: self.set_mode(v))
             self.mode_btns[live] = b
+        settings.setdefault("at_end", m.PASTE_AT_END)
+        m.PASTE_AT_END = settings["at_end"]
+        seg2 = tk.Frame(ctl, bg=BG2, padx=1, pady=1)
+        seg2.pack(side="left", padx=(8, 0))
+        self.paste_btns = {}
+        for at_end, label in ((False, "Cursor"), (True, "End")):
+            b = tk.Label(seg2, text=label, font=SMALL, padx=7, pady=0, cursor="hand2")
+            b.pack(side="left")
+            b.bind("<Button-1>", lambda e, v=at_end: self.set_paste_mode(v))
+            self.paste_btns[at_end] = b
         tk.Label(ctl, text="hotkey", bg=BG, fg=DIM, font=SMALL).pack(side="left", padx=(10, 4))
         self.hotkey_var = tk.StringVar(value=key_label(settings["hotkey"]))
         self.hotkey_box = ttk.Combobox(ctl, textvariable=self.hotkey_var, width=9, font=SMALL,
@@ -208,6 +218,7 @@ class Widget:
                 "x": self.root.winfo_x(), "y": self.root.winfo_y(),
                 "expanded": self.expanded,
                 "hotkey": self.settings["hotkey"], "live": self.settings["live"],
+                "at_end": self.settings["at_end"],
             }))
         except Exception:
             pass
@@ -257,9 +268,22 @@ class Widget:
         self.save_state()
         self.root.after(50, self.give_focus_back)
 
+    def set_paste_mode(self, at_end: bool):
+        if self.state != "idle" or self.settings["at_end"] == at_end:
+            return
+        self.settings["at_end"] = at_end
+        m.PASTE_AT_END = at_end
+        self.paint_mode()
+        self.append_log(f"\nPaste -> {'append at END of box' if at_end else 'insert at CURSOR'}\n")
+        self.save_state()
+        self.root.after(50, self.give_focus_back)
+
     def paint_mode(self):
         for live, b in self.mode_btns.items():
             active = (self.settings["live"] == live)
+            b.configure(bg=BG_ACTIVE if active else BG2, fg=FG if active else DIM)
+        for at_end, b in self.paste_btns.items():
+            active = (self.settings["at_end"] == at_end)
             b.configure(bg=BG_ACTIVE if active else BG2, fg=FG if active else DIM)
 
     def on_hotkey(self, _event=None):
@@ -276,10 +300,11 @@ class Widget:
 
     def set_controls_enabled(self, on: bool):
         self.hotkey_box.configure(state="readonly" if on else "disabled")
-        for b in self.mode_btns.values():
+        btns = list(self.mode_btns.values()) + list(self.paste_btns.values())
+        for b in btns:
             b.configure(cursor="hand2" if on else "arrow")
         if not on:
-            for b in self.mode_btns.values():
+            for b in btns:
                 b.configure(fg=DIM)
         else:
             self.paint_mode()
@@ -351,13 +376,15 @@ class Widget:
 
 def initial_settings(args):
     """Saved mode/hotkey win unless overridden explicitly on the command line."""
-    settings = {"hotkey": "f8", "live": True}
+    settings = {"hotkey": "f8", "live": True, "at_end": m.PASTE_AT_END}
     try:
         st = json.loads(STATE_FILE.read_text())
         if isinstance(st.get("hotkey"), str):
             settings["hotkey"] = st["hotkey"]
         if isinstance(st.get("live"), bool):
             settings["live"] = st["live"]
+        if isinstance(st.get("at_end"), bool):
+            settings["at_end"] = st["at_end"]
     except Exception:
         pass
     if args.hotkey is not None:

@@ -3,6 +3,8 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.par
 sys.argv = ["x"]
 import meddictate as m
 
+m.PASTE_AT_END = True      # append mode: no trailing spaces; cursor mode tested at the end
+
 
 def run(name, phrases, expect):
     w = m.PhraseWriter(m.Target(), do_paste=False)
@@ -85,4 +87,22 @@ run("complete de-id tag dropped",
 run("section tag survives the de-id sweep",
     ["left {period}", "[IMPRESSION] {colon} acute PE"],
     "Left. Impression: Acute PE")
+
+# --- cursor mode: every paste ends with a space so it never glues onto what follows
+m.PASTE_AT_END = False
+run("cursor mode: trailing space after each phrase",
+    ["patient is stable {period}", "follow up"],
+    "Patient is stable. Follow up ")
+run("cursor mode: lone period pulls the space back",
+    ["left", "{period}", "next"],
+    "Left. Next ")
+run("cursor mode: newline phrase has no trailing space",
+    ["first line {new line}", "second"],
+    "First line\nSecond ")
+run("cursor mode: delete that removes word and its space",
+    ["patient has diabetes", "delete that asthma"],
+    "Patient has asthma ")
+run("cursor mode: backspace counts the trailing space",
+    ["GERDD", "backspace backspace"],
+    "GERD")
 

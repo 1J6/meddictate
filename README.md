@@ -62,6 +62,7 @@ Launch: `pyw -3.12 meddictate_ui.py` (or the `.bat`). A shortcut to that in
 - **Hotkey** (default F8, changeable in the widget) starts and stops; **Esc** cancels.
 - **Live** mode pastes each phrase when you pause ~0.7 s; **Batch** pastes everything when you stop.
 - The note box you were in when you pressed the hotkey is *locked*: you can click elsewhere and text keeps landing there.
+- **Cursor / End** (widget toggle, `PASTE_AT_END`): insert at the cursor position (default; a trailing space is added so text placed in front of existing text isn't glued on), or always append at the end of the box.
 - **Punctuation is dictated, never guessed**: "period", "comma", "colon", "question mark", "new line" (one Enter), "new paragraph" (two). Commands stack. The first letter of each sentence is capitalized automatically.
 - **Editing**: "backspace" (one character), "delete that" (previous word); both stack and reach back into text already pasted.
 - Fillers (um, uh, …) are removed. Section names ("impression", "findings") are ordinary words, not headers, unless `SECTION_HEADERS = True`.
